@@ -5,7 +5,7 @@
 export const googleReviewsMeta = {
   rating: 4.9, // Google's overall, all stars
   reviewCount: 99, // Google's total, all stars
-  fiveStarCount: 5,
+  fiveStarCount: 7,
   placeId: "ChIJPZ_gkuDnmIARhtXk5r9a9R0",
   reviewsUrl: "https://maps.google.com/?cid=2158731376653030790",
 } as const;
@@ -26,6 +26,19 @@ export type GoogleReviewsMeta = {
 };
 
 export const googleReviews: GoogleReview[] = [
+  {
+    name: "Neal Dollins",
+    rating: 5,
+    relativeTime: "a month ago",
+    quote:
+      "Go back today for another visit after my first initial.  And I have to say it only took a day or 2 after for everything in my back to calm down!",
+  },
+  {
+    name: "Debbi Hale",
+    rating: 5,
+    relativeTime: "a year ago",
+    quote: "Amazed at the positive results!! Great staff! Highly recommend",
+  },
   {
     name: "LCP 75",
     rating: 5,

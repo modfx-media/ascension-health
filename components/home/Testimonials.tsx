@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import { Reveal } from "@/components/Motion";
+import { ReviewMarquee } from "./ReviewMarquee";
 
 export type TestimonialItem = {
   name: string;
@@ -16,6 +17,7 @@ export function Testimonials({
   heading,
   eyebrow = "Google Reviews",
   showSiteLink = true,
+  variant = "grid",
 }: {
   items: TestimonialItem[];
   rating: number;
@@ -24,6 +26,7 @@ export function Testimonials({
   heading?: string;
   eyebrow?: string;
   showSiteLink?: boolean;
+  variant?: "grid" | "marquee";
 }) {
   if (items.length === 0) return null;
 
@@ -56,34 +59,38 @@ export function Testimonials({
             </span>
           </a>
         </Reveal>
-        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((t, i) => (
-            <Reveal key={`${t.name}-${i}`} delay={0.06 * i}>
-              <figure className="h-full rounded-2xl bg-gradient-to-br from-brand-50 to-white p-7 ring-1 ring-brand-100 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-1" aria-label="5 star Google review">
-                    {Array.from({ length: 5 }).map((_, idx) => (
-                      <Star key={idx} className="h-4 w-4 fill-accent text-accent" />
-                    ))}
+        {variant === "marquee" ? (
+          <ReviewMarquee items={items} />
+        ) : (
+          <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {items.map((t, i) => (
+              <Reveal key={`${t.name}-${i}`} delay={0.06 * i}>
+                <figure className="h-full rounded-2xl bg-gradient-to-br from-brand-50 to-white p-7 ring-1 ring-brand-100 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-1" aria-label="5 star Google review">
+                      {Array.from({ length: 5 }).map((_, idx) => (
+                        <Star key={idx} className="h-4 w-4 fill-accent text-accent" />
+                      ))}
+                    </div>
+                    <GoogleMark />
                   </div>
-                  <GoogleMark />
-                </div>
-                <blockquote className="mt-4 text-[15px] text-slate-700 leading-relaxed whitespace-pre-line">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-                <figcaption className="mt-5 flex items-center gap-3 border-t border-brand-100 pt-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-700 text-white text-sm font-semibold">
-                    {t.name.charAt(0)}
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-brand-900">{t.name}</span>
-                    <span className="block text-xs text-slate-500">{t.when}</span>
-                  </span>
-                </figcaption>
-              </figure>
-            </Reveal>
-          ))}
-        </div>
+                  <blockquote className="mt-4 text-[15px] text-slate-700 leading-relaxed whitespace-pre-line">
+                    &ldquo;{t.quote}&rdquo;
+                  </blockquote>
+                  <figcaption className="mt-5 flex items-center gap-3 border-t border-brand-100 pt-4">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-700 text-white text-sm font-semibold">
+                      {t.name.charAt(0)}
+                    </span>
+                    <span>
+                      <span className="block text-sm font-semibold text-brand-900">{t.name}</span>
+                      <span className="block text-xs text-slate-500">{t.when}</span>
+                    </span>
+                  </figcaption>
+                </figure>
+              </Reveal>
+            ))}
+          </div>
+        )}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           <a
             href={reviewsUrl}

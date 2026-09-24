@@ -38,6 +38,68 @@ function fallbackPayload(): GoogleReviewsPayload {
   };
 }
 
+function reviewKey(review: GoogleReview): string {
+  return `${review.name.trim().toLowerCase()}::${review.quote.trim().toLowerCase()}`;
+}
+
+function mergeUniqueFiveStar(
+  live: GoogleReview[],
+  saved: GoogleReview[],
+): GoogleReview[] {
+  const seen = new Set<string>();
+  const out: GoogleReview[] = [];
+  for (const review of [...live, ...saved].filter(isFiveStarReview)) {
+    const key = reviewKey(review);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(review);
+  }
+  return out;
+}
+
+type LegacyReview = {
+  author_name?: string;
+  rating?: number;
+  relative_time_description?: string;
+  text?: string;
+};
+
+/** Places Details returns 5 reviews per sort. Newest is a different set than most relevant. */
+async function fetchNewestFiveStarReviews(
+  apiKey: string,
+  placeId: string,
+): Promise<GoogleReview[]> {
+  const url = new URL("https://maps.googleapis.com/maps/api/place/details/json");
+  url.searchParams.set("place_id", placeId);
+  url.searchParams.set("fields", "reviews");
+  url.searchParams.set("reviews_sort", "newest");
+  url.searchParams.set("key", apiKey);
+
+  const response = await fetch(url, {
+    next: {
+      revalidate: REVIEWS_REVALIDATE_SECONDS,
+      tags: ["google-reviews"],
+    },
+  });
+  const data = (await response.json()) as {
+    status?: string;
+    result?: { reviews?: LegacyReview[] };
+  };
+  if (!response.ok || data.status !== "OK") return [];
+
+  return (data.result?.reviews ?? [])
+    .map((review) =>
+      mapPlaceReview({
+        rating: review.rating,
+        relativePublishTimeDescription: review.relative_time_description,
+        text: { text: review.text },
+        authorAttribution: { displayName: review.author_name },
+      }),
+    )
+    .filter((review): review is GoogleReview => review !== null)
+    .filter(isFiveStarReview);
+}
+
 function mapPlaceReview(review: PlacesReview): GoogleReview | null {
   const quote = (review.text?.text ?? review.originalText?.text ?? "").trim();
   const name = review.authorAttribution?.displayName?.trim() ?? "";
@@ -97,15 +159,20 @@ export const getDisplayedGoogleReviews = cache(
         .map(mapPlaceReview)
         .filter((review): review is GoogleReview => review !== null)
         .filter(isFiveStarReview);
+      const newestReviews = await fetchNewestFiveStarReviews(apiKey, placeId);
 
-      if (liveReviews.length === 0) return fallbackPayload();
+      const merged = mergeUniqueFiveStar(
+        [...liveReviews, ...newestReviews],
+        fiveStarReviews,
+      );
+      if (merged.length === 0) return fallbackPayload();
 
       return {
-        reviews: liveReviews,
+        reviews: merged,
         meta: {
           rating: data.rating ?? googleReviewsMeta.rating,
           reviewCount: data.userRatingCount ?? googleReviewsMeta.reviewCount,
-          fiveStarCount: liveReviews.length,
+          fiveStarCount: merged.length,
           placeId,
           reviewsUrl: data.googleMapsUri ?? googleReviewsMeta.reviewsUrl,
         },

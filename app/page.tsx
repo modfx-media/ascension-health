@@ -124,6 +124,7 @@ export default async function Home() {
             rating={reviewMeta.rating}
             reviewCount={reviewMeta.reviewCount}
             reviewsUrl={reviewMeta.reviewsUrl}
+            variant="marquee"
           />
         )}
       </GoogleReviews>
