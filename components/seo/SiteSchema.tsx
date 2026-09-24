@@ -1,4 +1,6 @@
 import { SITE } from "@/lib/navigation";
+import { getDisplayedGoogleReviews } from "@/lib/google-reviews";
+import { isFiveStarReview } from "@/lib/reviews";
 
 const ORIGIN = "https://ascensionhealthnv.com";
 const APPROX_LAT = 39.6082;
@@ -13,8 +15,11 @@ function ldJson(payload: unknown): string {
  * page emits clinic NAP, geo and hours. Uses a stable @id so per-page schema
  * (rendered by SchemaMarkup on pSEO routes) is treated as the same entity.
  */
-export function SiteSchema() {
-  const organization = {
+export async function SiteSchema() {
+  const { reviews, meta } = await getDisplayedGoogleReviews();
+  const visible = reviews.filter(isFiveStarReview);
+
+  const organization: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "MedicalBusiness",
     "@id": `${ORIGIN}/#localbusiness`,
@@ -62,6 +67,28 @@ export function SiteSchema() {
     ],
     sameAs: [SITE.social?.facebook, SITE.social?.google, SITE.social?.twitter].filter(Boolean),
   };
+
+  if (meta.rating > 0 && meta.reviewCount > 0) {
+    organization.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: String(meta.rating),
+      reviewCount: String(meta.reviewCount),
+      bestRating: "5",
+    };
+  }
+
+  if (visible.length > 0) {
+    organization.review = visible.map((review) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: review.name },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+      },
+      reviewBody: review.quote,
+    }));
+  }
 
   const website = {
     "@context": "https://schema.org",

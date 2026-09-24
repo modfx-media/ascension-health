@@ -30,6 +30,7 @@ export const NAVIGATION: NavItem[] = [
     children: [
       { label: "Our Team", href: "/our-team/" },
       { label: "Blog", href: "/blog/" },
+      { label: "Reviews", href: "/reviews/" },
     ],
   },
   {

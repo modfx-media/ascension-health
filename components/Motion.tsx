@@ -422,7 +422,13 @@ const HERO_SERVICE_ICONS: { Icon: IconType; label: string }[] = [
   { Icon: Sparkles, label: "Wellness" },
 ];
 
-export function HeroVisual() {
+export function HeroVisual({
+  rating = 4.9,
+  reviewsUrl,
+}: {
+  rating?: number;
+  reviewsUrl?: string;
+}) {
   const serviceIcons = HERO_SERVICE_ICONS;
   return (
     <div
@@ -495,22 +501,10 @@ export function HeroVisual() {
         }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        <div className="rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-2xl shadow-brand-950/30 px-4 py-3 min-w-[200px]">
-          <div className="flex items-center gap-1 text-accent">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <StarGlyph key={i} />
-            ))}
-            <span className="ml-1 text-xs font-semibold text-brand-950">
-              4.9
-            </span>
-          </div>
-          <div className="mt-1 text-sm font-semibold text-brand-950 leading-tight">
-            Loved by patients
-          </div>
-          <div className="text-[11px] text-brand-800/70 mt-0.5">
-            Across hundreds of visits
-          </div>
-        </div>
+        <RatingCard
+          rating={rating}
+          reviewsUrl={reviewsUrl}
+        />
       </motion.div>
 
       <motion.div
@@ -535,6 +529,42 @@ export function HeroVisual() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+function RatingCard({
+  rating,
+  reviewsUrl,
+}: {
+  rating: number;
+  reviewsUrl?: string;
+}) {
+  const ratingLabel = Number.isInteger(rating) ? rating.toFixed(0) : rating.toFixed(1);
+  const inner = (
+    <div className="rounded-2xl bg-white/95 backdrop-blur-xl border border-white/60 shadow-2xl shadow-brand-950/30 px-4 py-3 min-w-[200px]">
+      <div className="flex items-center gap-1 text-accent">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <StarGlyph key={i} />
+        ))}
+        <span className="ml-1 text-xs font-semibold text-brand-950">
+          {ratingLabel}
+        </span>
+      </div>
+      <div className="mt-1 text-sm font-semibold text-brand-950 leading-tight">
+        Loved by patients
+      </div>
+      <div className="text-[11px] text-brand-800/70 mt-0.5">
+        Google reviews
+      </div>
+    </div>
+  );
+
+  if (!reviewsUrl) return inner;
+
+  return (
+    <a href={reviewsUrl} target="_blank" rel="noopener noreferrer" className="block">
+      {inner}
+    </a>
   );
 }
 

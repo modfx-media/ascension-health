@@ -12,7 +12,6 @@ import {
   buildTreatmentFAQs,
   nearbyCities,
 } from "@/lib/pSEO-content";
-import { pickTestimonials } from "@/lib/pSEO-testimonials";
 
 /**
  * `app/treatments/[slug]/page.tsx`
@@ -124,7 +123,6 @@ export default async function TreatmentPage({
       }
       relatedItems={related}
       faqs={buildTreatmentFAQs(page.title, page.h1)}
-      testimonials={pickTestimonials(page.service ?? page.condition)}
       city={city}
       nearbyCities={city ? nearbyCities(city) : []}
       buildNearbyHref={(c) => `/treatments/${slug.replace(/-[a-z-]+-nv$/, `-${c.slug}-nv`)}/`}

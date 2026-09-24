@@ -23,7 +23,6 @@ import {
   relatedConditionsForService,
   relatedServicesForCondition,
 } from "@/lib/pSEO-content";
-import { pickTestimonials } from "@/lib/pSEO-testimonials";
 
 /**
  * `app/[service]/[city]/page.tsx`
@@ -181,7 +180,6 @@ function renderServiceCity(service: Service, city: City) {
         href: `/${c.slug}/${city.slug}-nv/`,
       }))}
       faqs={buildServiceCityFAQs(service, city)}
-      testimonials={pickTestimonials(service.slug)}
       city={city}
       nearbyCities={nearbyCities(city)}
       buildNearbyHref={(c) => `/${service.slug}/${c.slug}-nv/`}
@@ -213,7 +211,6 @@ function renderConditionCity(condition: Condition, city: City) {
         href: `/${s.slug}/${city.slug}-nv/`,
       }))}
       faqs={buildConditionCityFAQs(condition, city)}
-      testimonials={pickTestimonials(condition.slug)}
       city={city}
       nearbyCities={nearbyCities(city)}
       buildNearbyHref={(c) => `/${condition.slug}/${c.slug}-nv/`}
@@ -245,7 +242,6 @@ function renderNearCity(service: Service, city: City) {
         href: `/${c.slug}/${city.slug}-nv/`,
       }))}
       faqs={buildNearCityFAQs(service, city)}
-      testimonials={pickTestimonials(service.slug)}
       city={city}
       nearbyCities={nearbyCities(city)}
       buildNearbyHref={(c) => `/${service.slug}/near-${c.slug}/`}

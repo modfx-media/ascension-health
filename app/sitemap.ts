@@ -27,6 +27,7 @@ const CORE_ENTRIES: Entry[] = [
   { path: "/conditions-treated/", priority: 1.0, changeFrequency: "monthly" },
   { path: "/areas-we-serve/", priority: 0.9, changeFrequency: "weekly" },
   { path: "/blog/", priority: 0.8, changeFrequency: "weekly" },
+  { path: "/reviews/", priority: 0.8, changeFrequency: "weekly" },
   { path: "/eugene-or/", priority: 0.9, changeFrequency: "monthly" },
   { path: "/sitemap/", priority: 0.3, changeFrequency: "yearly" },
   { path: "/accessibility/", priority: 0.3, changeFrequency: "yearly" },

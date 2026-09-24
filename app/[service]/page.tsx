@@ -21,7 +21,7 @@ import {
   parseCityNvSlug,
 } from "@/lib/pSEO-routing";
 import { nearbyCities } from "@/lib/pSEO-content";
-import { pickTestimonials } from "@/lib/pSEO-testimonials";
+import { getDisplayedGoogleReviews } from "@/lib/google-reviews";
 
 /**
  * City hub page, `/{city}-nv/` (e.g. /fernley-nv/).
@@ -67,7 +67,8 @@ export default async function CityHubPage({
 
   const cityName = cityObj.name;
   const surrounding = nearbyCities(cityObj);
-  const testimonials = pickTestimonials(undefined);
+  const { reviews } = await getDisplayedGoogleReviews();
+  const featuredReview = reviews[0];
 
   const pagePath = `/${service}/`;
 
@@ -330,14 +331,16 @@ export default async function CityHubPage({
               <Phone className="h-4 w-4" /> Call {SITE.phone}
             </a>
           </div>
-          {testimonials[0] && (
+          {featuredReview && (
             <Reveal delay={0.1}>
               <figure className="mt-12 max-w-2xl mx-auto rounded-2xl bg-white/5 p-6 ring-1 ring-white/10 text-left">
-                <blockquote className="text-brand-100/90 italic">
-                  "{testimonials[0].quote}"
+                <blockquote className="text-brand-100/90 italic whitespace-pre-line">
+                  &ldquo;{featuredReview.quote}&rdquo;
                 </blockquote>
                 <figcaption className="mt-3 text-sm text-brand-100/70">
-                  {testimonials[0].name}, {testimonials[0].city}
+                  {featuredReview.name}
+                  {featuredReview.relativeTime ? ` · ${featuredReview.relativeTime}` : ""}
+                  {" · Google"}
                 </figcaption>
               </figure>
             </Reveal>

@@ -11,6 +11,7 @@ const QUICK_LINKS = [
   { label: "About", href: "/about/" },
   { label: "Our Team", href: "/our-team/" },
   { label: "Blog", href: "/blog/" },
+  { label: "Reviews", href: "/reviews/" },
   { label: "New Patients", href: "/new-patients/" },
   { label: "Online Forms", href: "/new-patients/online-forms/" },
   { label: "Appointments", href: "/appointments/" },

@@ -32,6 +32,9 @@ import {
 } from "@/components/Motion";
 import LeadForm from "@/components/LeadForm";
 import { CityLinkGrid } from "@/components/pSEO/CityLinkGrid";
+import { GoogleReviews } from "@/components/home/GoogleReviews";
+import { Testimonials } from "@/components/home/Testimonials";
+import { getDisplayedGoogleReviews } from "@/lib/google-reviews";
 import imgChiropracticCare from "@/images/chiropractic-care.jpg";
 import imgSpinalDecompression from "@/images/spinal-decompression.jpg";
 import imgJointInjections from "@/images/joint-injections.jpg";
@@ -101,14 +104,30 @@ const SERVICE_META: Record<
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const { meta } = await getDisplayedGoogleReviews();
+
   return (
     <>
-      <Hero />
+      <Hero rating={meta.rating} reviewCount={meta.reviewCount} reviewsUrl={meta.reviewsUrl} />
       <Mission />
       <Services />
       <Conditions />
-      <WhyChooseUs />
+      <GoogleReviews>
+        {({ reviews, meta: reviewMeta }) => (
+          <Testimonials
+            items={reviews.map((review) => ({
+              name: review.name,
+              quote: review.quote,
+              when: review.relativeTime ?? "Posted on Google",
+            }))}
+            rating={reviewMeta.rating}
+            reviewCount={reviewMeta.reviewCount}
+            reviewsUrl={reviewMeta.reviewsUrl}
+          />
+        )}
+      </GoogleReviews>
+      <WhyChooseUs rating={meta.rating} reviewCount={meta.reviewCount} reviewsUrl={meta.reviewsUrl} />
       <Appointment />
       <CityLinkGrid
         heading="Our clinic in Fernley, proudly serving these Northern Nevada communities"
@@ -121,7 +140,15 @@ export default function Home() {
 
 /* ============================ HERO ============================ */
 
-function Hero() {
+function Hero({
+  rating,
+  reviewCount,
+  reviewsUrl,
+}: {
+  rating: number;
+  reviewCount: number;
+  reviewsUrl: string;
+}) {
   return (
     <section className="relative overflow-hidden isolate">
       {/* Background video */}
@@ -236,7 +263,13 @@ function Hero() {
                   suffix="+"
                   label="Patients treated"
                 />
-                <Stat value={4.9} decimals={1} suffix="★" label="Patient rating" />
+                <Stat
+                  value={rating}
+                  decimals={1}
+                  suffix="★"
+                  label={`${reviewCount.toLocaleString()} Google reviews`}
+                  href={reviewsUrl}
+                />
               </dl>
             </Reveal>
           </div>
@@ -244,7 +277,7 @@ function Hero() {
           {/* Right column, animated graphic */}
           <Reveal delay={0.2} y={0}>
             <div className="relative hidden lg:block">
-              <HeroVisual />
+              <HeroVisual rating={rating} reviewsUrl={reviewsUrl} />
             </div>
           </Reveal>
         </div>
@@ -258,20 +291,37 @@ function Stat({
   suffix,
   label,
   decimals,
+  href,
 }: {
   value: number;
   suffix?: string;
   label: string;
   decimals?: number;
+  href?: string;
 }) {
-  return (
-    <div>
+  const content = (
+    <>
       <dt className="font-display text-3xl font-semibold text-white">
         <Counter to={value} suffix={suffix} decimals={decimals} />
       </dt>
       <dd className="mt-1 text-xs text-brand-100/70 leading-tight">{label}</dd>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-lg transition-colors hover:text-accent"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return <div>{content}</div>;
 }
 
 /* =========================== MISSION =========================== */
@@ -635,7 +685,15 @@ const FEATURES = [
   },
 ];
 
-function WhyChooseUs() {
+function WhyChooseUs({
+  rating,
+  reviewCount,
+  reviewsUrl,
+}: {
+  rating: number;
+  reviewCount: number;
+  reviewsUrl: string;
+}) {
   return (
     <section className="relative overflow-hidden py-20 lg:py-28 text-brand-50">
       {/* Background image */}
@@ -719,14 +777,19 @@ function WhyChooseUs() {
                     Services
                   </p>
                 </div>
-                <div className="text-center">
+                <a
+                  href={reviewsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-center rounded-xl transition-colors hover:bg-white/5"
+                >
                   <p className="font-display text-2xl font-semibold text-white">
-                    4.9★
+                    {Number.isInteger(rating) ? rating.toFixed(0) : rating.toFixed(1)}★
                   </p>
                   <p className="mt-0.5 text-[10px] uppercase tracking-widest text-brand-200/70">
-                    Rated
+                    {reviewCount.toLocaleString()} Google reviews
                   </p>
-                </div>
+                </a>
               </div>
             </Reveal>
           </div>

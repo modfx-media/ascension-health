@@ -11,7 +11,6 @@ import {
   Phone,
   ShieldCheck,
   Sparkles,
-  Star,
   Stethoscope,
   Users,
 } from "lucide-react";
@@ -23,7 +22,8 @@ import { getCondition, getService } from "@/lib/pSEO-routing";
 import type { PSEOCity } from "@/lib/pSEO-data";
 import { CLINIC_FOUNDING_YEAR } from "@/lib/pSEO-content";
 import type { FAQ } from "@/lib/pSEO-content";
-import type { Testimonial } from "@/lib/pSEO-testimonials";
+import { GoogleReviews } from "@/components/home/GoogleReviews";
+import { Testimonials } from "@/components/home/Testimonials";
 
 /**
  * Universal page template for every programmatic SEO page in the Ascension
@@ -66,8 +66,6 @@ export type PseoPageTemplateProps = {
   relatedItems: RelatedItem[];
   /** Section 6, FAQs (rendered + emitted as FAQPage JSON-LD). */
   faqs: FAQ[];
-  /** Section 7, testimonials. */
-  testimonials: Testimonial[];
   /** Section 8, only rendered when present. */
   city?: PSEOCity;
   /** Cities shown in the "Also serving" list. */
@@ -94,7 +92,6 @@ export function PseoPageTemplate(props: PseoPageTemplateProps) {
     relatedHeading,
     relatedItems,
     faqs,
-    testimonials,
     city,
     nearbyCities = [],
     buildNearbyHref,
@@ -166,8 +163,26 @@ export function PseoPageTemplate(props: PseoPageTemplateProps) {
       {/* ─────────── 6. FAQ ─────────── */}
       <FaqSection faqs={faqs} cityName={cityName} topicName={topicName} />
 
-      {/* ─────────── 7. TESTIMONIALS ─────────── */}
-      <TestimonialsSection testimonials={testimonials} cityName={cityName} />
+      {/* ─────────── 7. GOOGLE REVIEWS ─────────── */}
+      <GoogleReviews>
+        {({ reviews, meta }) => (
+          <Testimonials
+            items={reviews.map((review) => ({
+              name: review.name,
+              quote: review.quote,
+              when: review.relativeTime ?? "Posted on Google",
+            }))}
+            rating={meta.rating}
+            reviewCount={meta.reviewCount}
+            reviewsUrl={meta.reviewsUrl}
+            heading={
+              cityName
+                ? `What ${cityName}-area patients say on Google`
+                : "What patients say on Google"
+            }
+          />
+        )}
+      </GoogleReviews>
 
       {/* ─────────── 8. LOCAL AREA ─────────── */}
       {city && (
@@ -526,57 +541,6 @@ function FaqSection({
             </details>
           </Reveal>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function TestimonialsSection({
-  testimonials,
-  cityName,
-}: {
-  testimonials: Testimonial[];
-  cityName?: string;
-}) {
-  if (testimonials.length === 0) return null;
-  return (
-    <section className="bg-white border-y border-slate-200/70">
-      <div className="mx-auto max-w-7xl px-6 py-16 sm:py-20">
-        <Reveal>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent text-center">
-            Real Patient Stories
-          </p>
-          <h2 className="mt-3 text-center font-display text-3xl sm:text-4xl font-semibold text-brand-900">
-            {cityName
-              ? `What ${cityName}-area patients are saying`
-              : "What Nevada patients are saying"}
-          </h2>
-        </Reveal>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {testimonials.map((t, i) => (
-            <Reveal key={`${t.name}-${i}`} delay={0.06 * i}>
-              <figure className="h-full rounded-2xl bg-gradient-to-br from-brand-50 to-white p-7 ring-1 ring-brand-100 shadow-sm">
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: t.rating }).map((_, idx) => (
-                    <Star key={idx} className="h-4 w-4 fill-accent text-accent" />
-                  ))}
-                </div>
-                <blockquote className="mt-4 text-[15px] text-slate-700 leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-                <figcaption className="mt-5 flex items-center gap-3 border-t border-brand-100 pt-4">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-700 text-white text-sm font-semibold">
-                    {t.name.charAt(0)}
-                  </span>
-                  <span>
-                    <span className="block text-sm font-semibold text-brand-900">{t.name}</span>
-                    <span className="block text-xs text-slate-500">{t.city}</span>
-                  </span>
-                </figcaption>
-              </figure>
-            </Reveal>
-          ))}
-        </div>
       </div>
     </section>
   );
