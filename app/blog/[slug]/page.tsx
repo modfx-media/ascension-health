@@ -29,6 +29,7 @@ import {
   getPublishedSitePosts,
   getRelatedFromList,
 } from "@/lib/ranked/map-post";
+import { BLOG_PUBLIC } from "@/lib/blog-visibility";
 import { SITE } from "@/lib/navigation";
 
 export const revalidate = 3600;
@@ -39,6 +40,7 @@ const SITE_URL = "https://ascensionhealthnv.com";
 type RouteParams = { slug: string };
 
 export async function generateStaticParams(): Promise<RouteParams[]> {
+  if (!BLOG_PUBLIC) return [];
   const posts = await getPublishedSitePosts().catch(() => []);
   return posts.map((p) => ({ slug: p.slug }));
 }
@@ -49,6 +51,7 @@ export async function generateMetadata({
   params: Promise<RouteParams>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  if (!BLOG_PUBLIC) return { title: "Article not found", robots: { index: false, follow: false } };
   const post = await getPublishedSitePost(slug);
   if (!post) return { title: "Article not found" };
 
@@ -88,6 +91,7 @@ export default async function BlogPostPage({
   params: Promise<RouteParams>;
 }) {
   const { slug } = await params;
+  if (!BLOG_PUBLIC) notFound();
   const posts = await getPublishedSitePosts();
   const post = posts.find((p) => p.slug === slug);
   if (!post) notFound();

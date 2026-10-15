@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Phone, Clock } from "lucide-react";
+import { BLOG_PUBLIC } from "@/lib/blog-visibility";
 import { NAVIGATION, SITE } from "@/lib/navigation";
 import logo from "@/images/logo.png";
 
@@ -10,7 +11,7 @@ const QUICK_LINKS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about/" },
   { label: "Our Team", href: "/our-team/" },
-  { label: "Blog", href: "/blog/" },
+  ...(BLOG_PUBLIC ? [{ label: "Blog", href: "/blog/" }] : []),
   { label: "Reviews", href: "/reviews/" },
   { label: "New Patients", href: "/new-patients/" },
   { label: "Online Forms", href: "/new-patients/online-forms/" },

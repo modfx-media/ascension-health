@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { ArrowRight, Calendar, Clock, Search, Tag } from "lucide-react";
 import { PageHero, BottomCTA } from "@/components/InteriorPage";
 import { Reveal } from "@/components/Motion";
@@ -10,6 +11,7 @@ import {
   formatPostDate,
   type BlogPost,
 } from "@/lib/blog";
+import { BLOG_PUBLIC } from "@/lib/blog-visibility";
 import { getPublishedSitePosts } from "@/lib/ranked/map-post";
 
 export const revalidate = 3600;
@@ -20,6 +22,7 @@ const BLOG_DESCRIPTION =
 export const metadata: Metadata = {
   title: "Blog, Chiropractic, Wellness & Pain-Free Living",
   description: BLOG_DESCRIPTION,
+  robots: BLOG_PUBLIC ? undefined : { index: false, follow: false },
   alternates: { canonical: "/blog/" },
   openGraph: {
     title: "Ascension Health Blog",
@@ -35,6 +38,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogIndexPage() {
+  if (!BLOG_PUBLIC) notFound();
   const posts = await getPublishedSitePosts();
   const featured = posts[0];
   const rest = featured ? posts.filter((p) => p.slug !== featured.slug) : posts;

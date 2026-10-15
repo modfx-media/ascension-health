@@ -16,6 +16,7 @@ import {
   normalizeTitle,
   slugFromTitle,
 } from "./html-to-post"
+import { BLOG_PUBLIC } from "@/lib/blog-visibility"
 import { getLocalBlogPosts } from "./local-posts"
 import type { BlogPostData, RankedContentDetail, RankedContentListItem } from "./types"
 
@@ -144,6 +145,7 @@ export async function getPublishedBlogPost(slug: string): Promise<BlogPostData |
 }
 
 export async function getPublishedBlogPosts(): Promise<BlogPostData[]> {
+  if (!BLOG_PUBLIC) return []
   // Ranked CMS merge disabled — the site only publishes locally authored posts (lib/blog.ts).
   const local = getLocalBlogPosts()
   return ensureUniquePublishDates(ensureUniqueCoverImages(local))

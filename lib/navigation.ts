@@ -1,3 +1,5 @@
+import { BLOG_PUBLIC } from "@/lib/blog-visibility";
+
 export type NavChild = { label: string; href: string };
 export type NavItem = {
   label: string;
@@ -29,7 +31,7 @@ export const NAVIGATION: NavItem[] = [
     href: "/about/",
     children: [
       { label: "Our Team", href: "/our-team/" },
-      { label: "Blog", href: "/blog/" },
+      ...(BLOG_PUBLIC ? [{ label: "Blog", href: "/blog/" }] : []),
       { label: "Reviews", href: "/reviews/" },
     ],
   },

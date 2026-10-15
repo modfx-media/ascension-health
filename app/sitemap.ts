@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
+import { BLOG_PUBLIC } from "@/lib/blog-visibility";
 import { PSEO_CONDITIONS, PSEO_SERVICES } from "@/lib/pSEO-data";
 import {
   PSEO_TARGET_CITIES,
@@ -26,7 +27,9 @@ const CORE_ENTRIES: Entry[] = [
   { path: "/new-patients/online-forms/", priority: 0.6, changeFrequency: "yearly" },
   { path: "/conditions-treated/", priority: 1.0, changeFrequency: "monthly" },
   { path: "/areas-we-serve/", priority: 0.9, changeFrequency: "weekly" },
-  { path: "/blog/", priority: 0.8, changeFrequency: "weekly" },
+  ...(BLOG_PUBLIC
+    ? [{ path: "/blog/", priority: 0.8, changeFrequency: "weekly" as const }]
+    : []),
   { path: "/reviews/", priority: 0.8, changeFrequency: "weekly" },
   { path: "/eugene-or/", priority: 0.9, changeFrequency: "monthly" },
   { path: "/sitemap/", priority: 0.3, changeFrequency: "yearly" },
@@ -117,9 +120,11 @@ function buildPseoEntries(): Entry[] {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
 
-  const slugs = await getPublishedBlogSlugs().catch(() =>
-    getAllPosts().map((post) => post.slug),
-  );
+  const slugs = BLOG_PUBLIC
+    ? await getPublishedBlogSlugs().catch(() =>
+        getAllPosts().map((post) => post.slug),
+      )
+    : [];
   const blogEntries: Entry[] = slugs.map((slug) => ({
     path: `/blog/${slug}/`,
     priority: 0.7,
