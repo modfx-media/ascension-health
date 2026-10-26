@@ -1,0 +1,30 @@
+{
+  "created": 69,
+  "updated": 3,
+  "skipped": 0,
+  "errors": [],
+  "drafts": 72,
+  "published": 0,
+  "collections": {
+    "authors": {
+      "created": 1,
+      "updated": 0
+    },
+    "categories": {
+      "created": 8,
+      "updated": 0
+    },
+    "posts": {
+      "created": 15,
+      "updated": 0
+    },
+    "pages": {
+      "created": 45,
+      "updated": 0
+    },
+    "globals": {
+      "created": 0,
+      "updated": 3
+    }
+  }
+}

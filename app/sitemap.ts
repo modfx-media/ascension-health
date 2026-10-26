@@ -8,6 +8,7 @@ import {
   SITE_URL,
 } from "@/lib/pSEO-routing";
 import { getPublishedBlogSlugs } from "@/lib/ranked/posts";
+import { safeSitemapEntries } from "@/lib/cms/queries";
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]["changeFrequency"];
 
@@ -142,6 +143,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]) {
     const prev = seen.get(e.path);
     if (!prev || e.priority > prev.priority) seen.set(e.path, e);
+  }
+
+  const cmsEntries = await safeSitemapEntries();
+  for (const e of cmsEntries) {
+    if (!seen.has(e.path)) seen.set(e.path, e);
   }
 
   return [...seen.values()].map((e) => ({
