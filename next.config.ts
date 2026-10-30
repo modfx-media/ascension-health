@@ -20,6 +20,14 @@ const CONDITION_REDIRECTS = [
   "neck-pain",
 ];
 
+// sharp's linux binary dlopens libvips-cpp.so from @img/sharp-libvips-linux-x64.
+// Payload's config imports sharp, so every serverless route that loads it needs both.
+const sharpTrace = [
+  "./node_modules/@img/sharp-linux-x64/**/*",
+  "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+  "./node_modules/sharp/**/*",
+];
+
 const nextConfig: NextConfig = {
   // Match the live site's URL structure (e.g. /about/, /services/chiropractic-care/)
   trailingSlash: true,
@@ -27,11 +35,9 @@ const nextConfig: NextConfig = {
     "*": ["./public/images/**", "./public/**/*.mp4", "./public/**/*.webm"],
   },
   outputFileTracingIncludes: {
-    "/admin/**/*": [
-      "./node_modules/@img/sharp-linux-x64/**/*",
-      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
-      "./node_modules/sharp/**/*",
-    ],
+    "/admin/**/*": sharpTrace,
+    "/api/**/*": sharpTrace,
+    "/next/preview": sharpTrace,
   },
   serverExternalPackages: [
     "pg",
