@@ -1,4 +1,6 @@
-const ORIGIN = "https://ascensionhealthnv.com";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
+
+const ORIGIN = resolvePublicSiteOrigin();
 
 function ldJson(payload: unknown): string {
   return JSON.stringify(payload).replace(/</g, "\\u003c");

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: BLOG_PUBLIC ? ["/api/"] : ["/api/", "/blog/"],
     },
-    sitemap: "https://ascensionhealthnv.com/sitemap.xml",
+    sitemap: `${resolvePublicSiteOrigin()}/sitemap.xml`,
   };
 }
