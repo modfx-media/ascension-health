@@ -4,6 +4,8 @@ import type { ServerFunctionClient } from "payload";
 import { handleServerFunctions, RootLayout } from "@payloadcms/next/layouts";
 import React from "react";
 import { importMap } from "./admin/importMap.js";
+import { PayloadNotConfigured } from "@/components/cms/PayloadNotConfigured";
+import { missingPayloadEnv } from "@/lib/cms/required-env";
 import "./custom.css";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +23,23 @@ const serverFunction: ServerFunctionClient = async function (args) {
   });
 };
 
-const Layout = ({ children }: Args) => (
-  <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
-    {children}
-  </RootLayout>
-);
+const Layout = ({ children }: Args) => {
+  const missing = missingPayloadEnv();
+  if (missing.length) {
+    return (
+      <html lang="en">
+        <body>
+          <PayloadNotConfigured missing={missing} />
+        </body>
+      </html>
+    );
+  }
+
+  return (
+    <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
+      {children}
+    </RootLayout>
+  );
+};
 
 export default Layout;

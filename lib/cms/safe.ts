@@ -1,7 +1,9 @@
+import { databaseUrl } from "./required-env";
+
 const CMS_TIMEOUT_MS = 2500;
 
 function cmsConfigured(): boolean {
-  return Boolean(process.env.DATABASE_URL && process.env.PAYLOAD_SECRET);
+  return Boolean(databaseUrl() && process.env.PAYLOAD_SECRET);
 }
 
 /**

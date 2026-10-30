@@ -12,7 +12,11 @@ function metadataFromDoc(doc: CmsDoc, fallback: Metadata): Metadata {
   const meta = doc.meta ?? {};
   const titleSource = meta.title || doc.title || "";
   const description = meta.description || doc.excerpt || undefined;
-  const canonical = meta.canonicalUrl || doc.path || undefined;
+  const rawCanonical = meta.canonicalUrl || doc.path || undefined;
+  const canonical =
+    rawCanonical && /^https?:\/\//i.test(rawCanonical)
+      ? absoluteSiteUrl(rawCanonical)
+      : rawCanonical;
   const next: Metadata = { ...fallback };
 
   if (titleSource) {

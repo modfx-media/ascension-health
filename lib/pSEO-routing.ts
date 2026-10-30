@@ -1,3 +1,4 @@
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 import {
   PSEO_CITIES,
   PSEO_CONDITIONS,
@@ -163,7 +164,7 @@ export function getConditionHubHref(slug: string): string {
 // Shared metadata helper
 // ──────────────────────────────────────────────────────────────────────────
 
-export const SITE_URL = "https://ascensionhealthnv.com";
+export const SITE_URL = resolvePublicSiteOrigin();
 
 export function buildPageMetadata(args: {
   title: string;

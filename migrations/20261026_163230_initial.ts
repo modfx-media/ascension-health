@@ -1,7 +1,9 @@
-import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-vercel-postgres'
+import { MigrateUpArgs, MigrateDownArgs } from '@payloadcms/db-vercel-postgres'
+import { runSqlStatements } from '../lib/cms/sql-statements'
+
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
-  await db.execute(sql`
+  await runSqlStatements(db, `
    CREATE TYPE "public"."enum_users_roles" AS ENUM('admin', 'editor');
   CREATE TYPE "public"."enum_pages_status" AS ENUM('draft', 'published');
   CREATE TYPE "public"."enum__pages_v_version_status" AS ENUM('draft', 'published');
@@ -658,57 +660,57 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
-  await db.execute(sql`
-   DROP TABLE "users_roles" CASCADE;
-  DROP TABLE "users_sessions" CASCADE;
-  DROP TABLE "users" CASCADE;
-  DROP TABLE "media" CASCADE;
-  DROP TABLE "pages" CASCADE;
-  DROP TABLE "_pages_v" CASCADE;
-  DROP TABLE "posts" CASCADE;
-  DROP TABLE "posts_texts" CASCADE;
-  DROP TABLE "_posts_v" CASCADE;
-  DROP TABLE "_posts_v_texts" CASCADE;
-  DROP TABLE "categories" CASCADE;
-  DROP TABLE "_categories_v" CASCADE;
-  DROP TABLE "authors" CASCADE;
-  DROP TABLE "_authors_v" CASCADE;
-  DROP TABLE "payload_kv" CASCADE;
-  DROP TABLE "payload_jobs_log" CASCADE;
-  DROP TABLE "payload_jobs" CASCADE;
-  DROP TABLE "payload_locked_documents" CASCADE;
-  DROP TABLE "payload_locked_documents_rels" CASCADE;
-  DROP TABLE "payload_preferences" CASCADE;
-  DROP TABLE "payload_preferences_rels" CASCADE;
-  DROP TABLE "payload_migrations" CASCADE;
-  DROP TABLE "header_nav_children" CASCADE;
-  DROP TABLE "header_nav" CASCADE;
-  DROP TABLE "header" CASCADE;
-  DROP TABLE "_header_v_version_nav_children" CASCADE;
-  DROP TABLE "_header_v_version_nav" CASCADE;
-  DROP TABLE "_header_v" CASCADE;
-  DROP TABLE "footer_links" CASCADE;
-  DROP TABLE "footer" CASCADE;
-  DROP TABLE "_footer_v_version_links" CASCADE;
-  DROP TABLE "_footer_v" CASCADE;
-  DROP TABLE "site_settings" CASCADE;
-  DROP TABLE "_site_settings_v" CASCADE;
-  DROP TYPE "public"."enum_users_roles";
-  DROP TYPE "public"."enum_pages_status";
-  DROP TYPE "public"."enum__pages_v_version_status";
-  DROP TYPE "public"."enum_posts_status";
-  DROP TYPE "public"."enum__posts_v_version_status";
-  DROP TYPE "public"."enum_categories_status";
-  DROP TYPE "public"."enum__categories_v_version_status";
-  DROP TYPE "public"."enum_authors_status";
-  DROP TYPE "public"."enum__authors_v_version_status";
-  DROP TYPE "public"."enum_payload_jobs_log_task_slug";
-  DROP TYPE "public"."enum_payload_jobs_log_state";
-  DROP TYPE "public"."enum_payload_jobs_task_slug";
-  DROP TYPE "public"."enum_header_status";
-  DROP TYPE "public"."enum__header_v_version_status";
-  DROP TYPE "public"."enum_footer_status";
-  DROP TYPE "public"."enum__footer_v_version_status";
-  DROP TYPE "public"."enum_site_settings_status";
-  DROP TYPE "public"."enum__site_settings_v_version_status";`)
+  await runSqlStatements(db, `
+   DROP TABLE IF EXISTS "users_roles" CASCADE;
+  DROP TABLE IF EXISTS "users_sessions" CASCADE;
+  DROP TABLE IF EXISTS "users" CASCADE;
+  DROP TABLE IF EXISTS "media" CASCADE;
+  DROP TABLE IF EXISTS "pages" CASCADE;
+  DROP TABLE IF EXISTS "_pages_v" CASCADE;
+  DROP TABLE IF EXISTS "posts" CASCADE;
+  DROP TABLE IF EXISTS "posts_texts" CASCADE;
+  DROP TABLE IF EXISTS "_posts_v" CASCADE;
+  DROP TABLE IF EXISTS "_posts_v_texts" CASCADE;
+  DROP TABLE IF EXISTS "categories" CASCADE;
+  DROP TABLE IF EXISTS "_categories_v" CASCADE;
+  DROP TABLE IF EXISTS "authors" CASCADE;
+  DROP TABLE IF EXISTS "_authors_v" CASCADE;
+  DROP TABLE IF EXISTS "payload_kv" CASCADE;
+  DROP TABLE IF EXISTS "payload_jobs_log" CASCADE;
+  DROP TABLE IF EXISTS "payload_jobs" CASCADE;
+  DROP TABLE IF EXISTS "payload_locked_documents" CASCADE;
+  DROP TABLE IF EXISTS "payload_locked_documents_rels" CASCADE;
+  DROP TABLE IF EXISTS "payload_preferences" CASCADE;
+  DROP TABLE IF EXISTS "payload_preferences_rels" CASCADE;
+  DROP TABLE IF EXISTS "payload_migrations" CASCADE;
+  DROP TABLE IF EXISTS "header_nav_children" CASCADE;
+  DROP TABLE IF EXISTS "header_nav" CASCADE;
+  DROP TABLE IF EXISTS "header" CASCADE;
+  DROP TABLE IF EXISTS "_header_v_version_nav_children" CASCADE;
+  DROP TABLE IF EXISTS "_header_v_version_nav" CASCADE;
+  DROP TABLE IF EXISTS "_header_v" CASCADE;
+  DROP TABLE IF EXISTS "footer_links" CASCADE;
+  DROP TABLE IF EXISTS "footer" CASCADE;
+  DROP TABLE IF EXISTS "_footer_v_version_links" CASCADE;
+  DROP TABLE IF EXISTS "_footer_v" CASCADE;
+  DROP TABLE IF EXISTS "site_settings" CASCADE;
+  DROP TABLE IF EXISTS "_site_settings_v" CASCADE;
+  DROP TYPE IF EXISTS "public"."enum_users_roles";
+  DROP TYPE IF EXISTS "public"."enum_pages_status";
+  DROP TYPE IF EXISTS "public"."enum__pages_v_version_status";
+  DROP TYPE IF EXISTS "public"."enum_posts_status";
+  DROP TYPE IF EXISTS "public"."enum__posts_v_version_status";
+  DROP TYPE IF EXISTS "public"."enum_categories_status";
+  DROP TYPE IF EXISTS "public"."enum__categories_v_version_status";
+  DROP TYPE IF EXISTS "public"."enum_authors_status";
+  DROP TYPE IF EXISTS "public"."enum__authors_v_version_status";
+  DROP TYPE IF EXISTS "public"."enum_payload_jobs_log_task_slug";
+  DROP TYPE IF EXISTS "public"."enum_payload_jobs_log_state";
+  DROP TYPE IF EXISTS "public"."enum_payload_jobs_task_slug";
+  DROP TYPE IF EXISTS "public"."enum_header_status";
+  DROP TYPE IF EXISTS "public"."enum__header_v_version_status";
+  DROP TYPE IF EXISTS "public"."enum_footer_status";
+  DROP TYPE IF EXISTS "public"."enum__footer_v_version_status";
+  DROP TYPE IF EXISTS "public"."enum_site_settings_status";
+  DROP TYPE IF EXISTS "public"."enum__site_settings_v_version_status";`)
 }

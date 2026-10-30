@@ -6,8 +6,9 @@ import { CityLinkGrid } from "@/components/pSEO/CityLinkGrid";
 import { Reveal } from "@/components/Motion";
 import { SITE } from "@/lib/navigation";
 import { getCondition, getService } from "@/lib/pSEO-routing";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
-const ORIGIN = "https://ascensionhealthnv.com";
+const ORIGIN = resolvePublicSiteOrigin();
 
 function ldJson(payload: unknown): string {
   return JSON.stringify(payload).replace(/</g, "\\u003c");

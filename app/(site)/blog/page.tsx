@@ -14,6 +14,7 @@ import {
 } from "@/lib/blog";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
 import { getPublishedSitePosts } from "@/lib/ranked/map-post";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
 export const revalidate = 3600;
 
@@ -29,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
   openGraph: {
     title: "Ascension Health Blog",
     description: BLOG_DESCRIPTION,
-    url: "https://ascensionhealthnv.com/blog/",
+    url: `${resolvePublicSiteOrigin()}/blog/`,
     type: "website",
     siteName: "Ascension Health",
   },

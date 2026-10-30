@@ -31,12 +31,13 @@ import {
 } from "@/lib/ranked/map-post";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
 import { withCmsMetadata } from "@/lib/cms/metadata";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 import { SITE } from "@/lib/navigation";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
 
-const SITE_URL = "https://ascensionhealthnv.com";
+const SITE_URL = resolvePublicSiteOrigin();
 
 type RouteParams = { slug: string };
 

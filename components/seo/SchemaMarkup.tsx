@@ -1,5 +1,6 @@
 import { SITE } from "@/lib/navigation";
 import type { FAQ } from "@/lib/pSEO-content";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
 /**
  * Reusable JSON-LD structured-data renderer for every programmatic SEO page.
@@ -24,7 +25,7 @@ import type { FAQ } from "@/lib/pSEO-content";
  * fully-static JSON-LD that Google reads from server-rendered HTML.
  */
 
-const ORIGIN = "https://ascensionhealthnv.com";
+const ORIGIN = resolvePublicSiteOrigin();
 const APPROX_LAT = 39.6082; // Fernley, NV
 const APPROX_LNG = -119.2517;
 

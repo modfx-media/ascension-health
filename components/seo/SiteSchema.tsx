@@ -1,8 +1,9 @@
 import { SITE } from "@/lib/navigation";
 import { getDisplayedGoogleReviews } from "@/lib/google-reviews";
 import { isFiveStarReview } from "@/lib/reviews";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
-const ORIGIN = "https://ascensionhealthnv.com";
+const ORIGIN = resolvePublicSiteOrigin();
 const APPROX_LAT = 39.6082;
 const APPROX_LNG = -119.2517;
 

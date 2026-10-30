@@ -9,7 +9,37 @@ function isLocalHost(value: string): boolean {
   return /:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(value);
 }
 
+function isVercelAppHost(hostname: string): boolean {
+  return hostname === "vercel.app" || hostname.endsWith(".vercel.app");
+}
+
 /**
+ * Public SEO origin. SITE_ORIGIN, then NEXT_PUBLIC_SITE_URL.
+ * Localhost and *.vercel.app are ignored so canonicals stay on the live domain.
+ */
+export function resolvePublicSiteOrigin(): string {
+  const candidates = [process.env.SITE_ORIGIN, process.env.NEXT_PUBLIC_SITE_URL];
+  for (const candidate of candidates) {
+    if (!candidate?.trim()) continue;
+    const withProtocol = /^https?:\/\//i.test(candidate.trim())
+      ? candidate.trim()
+      : `https://${candidate.trim()}`;
+    try {
+      const url = new URL(withProtocol);
+      const host = url.hostname.toLowerCase();
+      if (host === "localhost" || host === "127.0.0.1" || host === "::1") continue;
+      if (isVercelAppHost(host)) continue;
+      if (url.protocol !== "https:" && url.protocol !== "http:") continue;
+      return stripTrailingSlash(`${url.protocol}//${url.host}`);
+    } catch {
+      continue;
+    }
+  }
+  return APEX;
+}
+
+/**
+ * Payload admin/API server URL.
  * NEXT_PUBLIC_SERVER_URL, then NEXT_PUBLIC_SITE_URL.
  * On Vercel, never fall back to localhost.
  */

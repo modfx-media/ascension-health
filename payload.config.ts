@@ -15,12 +15,14 @@ import { Users } from "./collections/Users";
 import { Footer } from "./globals/Footer";
 import { Header } from "./globals/Header";
 import { SiteSettings } from "./globals/SiteSettings";
-import { corsOrigins, isLocalDatabase, resolveServerURL } from "./lib/cms/server-url";
+import { migrations } from "./migrations/index";
+import { databaseUrl } from "./lib/cms/required-env";
+import { corsOrigins, isLocalDatabase, resolvePublicSiteOrigin, resolveServerURL } from "./lib/cms/server-url";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
-const databaseUrl = process.env.DATABASE_URL || "";
+const connectionString = databaseUrl();
 
 export default buildConfig({
   admin: {
@@ -45,11 +47,12 @@ export default buildConfig({
   sharp,
   db: vercelPostgresAdapter({
     pool: {
-      connectionString: databaseUrl,
+      connectionString,
       connectionTimeoutMillis: 2500,
     },
-    push: process.env.VERCEL ? false : undefined,
-    forceUseVercelPostgres: !isLocalDatabase(databaseUrl),
+    push: false,
+    prodMigrations: migrations,
+    forceUseVercelPostgres: !isLocalDatabase(connectionString),
     migrationDir: path.resolve(dirname, "migrations"),
   }),
   jobs: {
@@ -75,7 +78,7 @@ export default buildConfig({
         return excerpt || "";
       },
       generateURL: ({ doc, collectionConfig }) => {
-        const site = resolveServerURL();
+        const site = resolvePublicSiteOrigin();
         const record = doc as { path?: string; slug?: string } | undefined;
         if (record?.path) {
           const pathValue = record.path.startsWith("/") ? record.path : `/${record.path}`;

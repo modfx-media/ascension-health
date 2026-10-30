@@ -7,6 +7,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import { CMSRoute } from "@/components/cms/CMSRoute";
 import { CmsFooterSlot, CmsHeaderSlot } from "@/components/cms/CMSChrome";
 import { SiteSchema } from "@/components/seo/SiteSchema";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -20,7 +21,7 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-const SITE_URL = "https://ascensionhealthnv.com";
+const SITE_URL = resolvePublicSiteOrigin();
 const TITLE_DEFAULT =
   "Chiropractor & Wellness Clinic in Fernley, NV | Ascension Health";
 const TITLE_TEMPLATE = "%s | Ascension Health";
@@ -28,7 +29,7 @@ const DESCRIPTION =
   "Chiropractic care, joint injections and medical weight loss in Fernley, NV. Same-week appointments, insurance accepted. Book online today.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ascensionhealthnv.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: TITLE_DEFAULT,
     template: TITLE_TEMPLATE,

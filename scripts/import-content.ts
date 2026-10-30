@@ -1,11 +1,14 @@
 import { config as loadEnv } from "dotenv";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { databaseUrl } from "../lib/cms/required-env";
+import { redactSecrets } from "../lib/cms/redact";
 import type { ContentExport, ContentRecord } from "./export-content";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
 
 type ImportReport = {
+  dryRun: boolean;
   created: number;
   updated: number;
   skipped: number;
@@ -38,7 +41,7 @@ function errorText(error: unknown): string {
     }
   };
   walk(error, 0);
-  return parts.join(" ");
+  return redactSecrets(parts.join(" ") || "import error");
 }
 
 function isTransient(error: unknown): boolean {
@@ -63,16 +66,21 @@ function dropStandaloneDoubleDash(argv: string[]): string[] {
   return argv.filter((arg) => arg !== "--");
 }
 
+function draftData(data: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...data };
+  delete next._status;
+  return next;
+}
+
 async function main() {
   dropStandaloneDoubleDash(process.argv.slice(2));
+  const apply = process.env.CMS_IMPORT_APPLY === "1";
 
-  const { getPayload } = await import("payload");
-  const { default: config } = await import("@payload-config");
   const exported = JSON.parse(readFileSync("data/content-export.json", "utf8")) as ContentExport;
   if (exported.version !== 1) throw new Error("unsupported export version");
 
-  const payload = await getPayload({ config });
   const report: ImportReport = {
+    dryRun: !apply,
     created: 0,
     updated: 0,
     skipped: 0,
@@ -82,6 +90,36 @@ async function main() {
     collections: {},
   };
 
+  console.log(
+    apply
+      ? "Applying CMS import as drafts. Existing published documents are not published by this script."
+      : "Dry run. No documents will be written. Set CMS_IMPORT_APPLY=1 to write drafts.",
+  );
+
+  const canConnect = Boolean(databaseUrl() && process.env.PAYLOAD_SECRET?.trim());
+  if (!canConnect) {
+    if (!apply) {
+      report.skipped = exported.records.length + 3;
+      console.log(
+        JSON.stringify(
+          {
+            dryRun: true,
+            records: exported.records.length,
+            globals: 3,
+            wrote: false,
+          },
+          null,
+          2,
+        ),
+      );
+      return;
+    }
+    throw new Error("CMS_IMPORT_APPLY=1 requires DATABASE_URL and PAYLOAD_SECRET");
+  }
+
+  const { getPayload } = await import("payload");
+  const { default: config } = await import("@payload-config");
+  const payload = await getPayload({ config });
   const idByLegacy = new Map<string, string | number>();
 
   async function findExisting(collection: ContentRecord["collection"], record: ContentRecord) {
@@ -116,8 +154,21 @@ async function main() {
     report.collections[collection][kind] += 1;
   }
 
+  function countStatus(saved: unknown) {
+    const status = (saved as { _status?: string } | undefined)?._status;
+    if (status === "published") report.published += 1;
+    else report.drafts += 1;
+  }
+
   async function upsert(record: ContentRecord, data: Record<string, unknown>) {
     const existing = await findExisting(record.collection, record);
+    if (!apply) {
+      tally(record.collection, existing ? "updated" : "created");
+      report.drafts += 1;
+      if (existing) idByLegacy.set(record.legacyId, (existing as { id: string | number }).id);
+      return existing;
+    }
+
     const saved = existing
       ? await withRetry(() =>
           payload.update({
@@ -137,9 +188,7 @@ async function main() {
           }),
         );
     tally(record.collection, existing ? "updated" : "created");
-    const status = (saved as { _status?: string })._status;
-    if (status === "published") report.published += 1;
-    else report.drafts += 1;
+    countStatus(saved);
     idByLegacy.set(record.legacyId, (saved as { id: string | number }).id);
     return saved;
   }
@@ -148,7 +197,7 @@ async function main() {
   for (const collection of order) {
     for (const record of exported.records.filter((item) => item.collection === collection)) {
       try {
-        const data: Record<string, unknown> = { ...record.data, legacyId: record.legacyId };
+        const data = draftData({ ...record.data, legacyId: record.legacyId });
         if (record.sourceUrl) data.sourceUrl = record.sourceUrl;
         if (collection === "posts") {
           const categoryLegacyId = data.categoryLegacyId;
@@ -157,12 +206,15 @@ async function main() {
           delete data.authorLegacyId;
           if (typeof categoryLegacyId === "string" && idByLegacy.has(categoryLegacyId)) {
             data.category = idByLegacy.get(categoryLegacyId);
+          } else {
+            delete data.category;
           }
           if (typeof authorLegacyId === "string" && idByLegacy.has(authorLegacyId)) {
             data.author = idByLegacy.get(authorLegacyId);
+          } else {
+            delete data.author;
           }
         }
-        delete data._status;
         await upsert(record, data);
       } catch (error) {
         report.errors.push({ legacyId: record.legacyId, message: errorText(error) });
@@ -174,28 +226,39 @@ async function main() {
   const globalSlugs = ["header", "footer", "site-settings"] as const;
   for (const slug of globalSlugs) {
     try {
-      await withRetry(() =>
+      const data = draftData({ ...(exported.globals[slug] ?? {}) });
+      if (!apply) {
+        tally("globals", "updated");
+        report.drafts += 1;
+        continue;
+      }
+      const saved = await withRetry(() =>
         payload.updateGlobal({
           slug,
-          data: exported.globals[slug] ?? {},
+          data,
           draft: true,
           overrideAccess: true,
         }),
       );
-      report.drafts += 1;
       tally("globals", "updated");
+      countStatus(saved);
     } catch (error) {
       report.errors.push({ legacyId: `global:${slug}`, message: errorText(error) });
+      console.error(`import failed global:${slug}: ${errorText(error)}`);
     }
   }
 
-  mkdirSync("migration-data", { recursive: true });
-  writeFileSync("migration-data/import-report.json", `${JSON.stringify(report, null, 2)}\n`);
+  if (apply) {
+    const { mkdirSync, writeFileSync } = await import("node:fs");
+    mkdirSync("migration-data", { recursive: true });
+    writeFileSync("migration-data/import-report.json", `${JSON.stringify(report, null, 2)}\n`);
+  }
+
   console.log(JSON.stringify({ ...report, errors: report.errors.length }, null, 2));
   if (report.errors.length || report.published > 0) process.exit(1);
 }
 
 main().catch((error: unknown) => {
-  console.error(error);
+  console.error(redactSecrets(errorText(error)));
   process.exit(1);
 });

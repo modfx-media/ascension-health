@@ -14,6 +14,7 @@ import {
 import { Reveal } from "@/components/Motion";
 import { SITE } from "@/lib/navigation";
 import { buildPageMetadata } from "@/lib/pSEO-routing";
+import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
 /**
  * Standalone auto-accident geo landing page, `/eugene-or/`.
@@ -99,7 +100,7 @@ const FAQS: { question: string; answer: string }[] = [
   },
 ];
 
-const PAGE_URL = "https://ascensionhealthnv.com/eugene-or/";
+const PAGE_URL = `${resolvePublicSiteOrigin()}/eugene-or/`;
 
 const LOCAL_BUSINESS_SCHEMA = {
   "@context": "https://schema.org",
@@ -107,7 +108,7 @@ const LOCAL_BUSINESS_SCHEMA = {
   name: "Ascension Health",
   url: PAGE_URL,
   telephone: "(775) 575-9922",
-  image: "https://ascensionhealthnv.com/og.png",
+  image: `${resolvePublicSiteOrigin()}/og.png`,
   address: {
     "@type": "PostalAddress",
     addressLocality: "Eugene",
