@@ -375,10 +375,8 @@ test("every designed route stays on its page component", () => {
   for (const file of pages) {
     const source = readFileSync(file, "utf8");
     const rel = path.relative(siteRoot, file).replaceAll("\\", "/");
-    if (rel === "[service]/[city]/[...rest]/page.tsx") {
-      assert.match(source, /CmsOnlyPage/);
-      assert.equal(isDesignedPath("/a/b/c/"), false);
-      continue;
+    if (rel.includes("...")) {
+      assert.fail(`${rel} is a catch-all and turns unknown deep URLs into a dynamic render`);
     }
     if (rel === "[service]/page.tsx" || rel === "[service]/[city]/page.tsx") {
       assert.match(source, /withCmsMetadata/);
@@ -391,6 +389,34 @@ test("every designed route stays on its page component", () => {
     const dir = path.dirname(rel);
     const route = dir === "." ? "/" : `/${dir}/`;
     assert.equal(isDesignedPath(route), true, route);
+  }
+});
+
+test("unknown 3+ segment paths stay on the static not-found page", () => {
+  const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../app/(site)");
+  const notFound = readFileSync(path.join(siteRoot, "not-found.tsx"), "utf8");
+  assert.match(notFound, /404: This page could not be found\./);
+  assert.match(notFound, /index:\s*false/);
+  assert.match(notFound, /This page could not be found\./);
+  assert.doesNotMatch(notFound, /payload|getPayload|withCMS|google-reviews|getDisplayedGoogleReviews|findDocForMetadata/i);
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        assert.equal(entry.includes("..."), false, `${full} would match unknown deep paths`);
+        walk(full);
+      }
+    }
+  };
+  walk(siteRoot);
+
+  for (const route of [
+    "/chiropractic-care/reno-nv/extra/",
+    "/chiropractic-care/reno-nv/a/b/",
+    "/foo/bar/baz/",
+  ]) {
+    assert.equal(isDesignedPath(route), false, route);
   }
 });
 
