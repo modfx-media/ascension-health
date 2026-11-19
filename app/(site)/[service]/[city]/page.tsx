@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import { CmsOnlyPage, cmsOnlyMetadata } from "@/components/cms/cmsOnly";
 import { withCmsMetadata } from "@/lib/cms/metadata";
-import { notFound } from "next/navigation";
 import { PseoPageTemplate } from "@/components/pSEO/PseoPageTemplate";
 import {
   PSEO_TARGET_CITIES,
@@ -50,7 +50,7 @@ import {
  * content.
  */
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 type Params = { service: string; city: string };
 
@@ -110,8 +110,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { service, city } = await params;
   const r = resolveCityParam(service, city);
-  if (!r) return {};
   const path = `/${service}/${city}/`;
+  if (!r) return cmsOnlyMetadata(path);
   switch (r.kind) {
     case "service-city":
       return withCmsMetadata(
@@ -150,7 +150,7 @@ export default async function ServiceCityRoute({
 }) {
   const { service, city } = await params;
   const r = resolveCityParam(service, city);
-  if (!r) notFound();
+  if (!r) return <CmsOnlyPage path={`/${service}/${city}/`} />;
 
   switch (r.kind) {
     case "service-city":
