@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test lib/cms/mergeDesigned.test.ts",
     "generate:types": "payload generate:types",
     "generate:importmap": "payload generate:importmap",
     "cms:export": "tsx scripts/export-content.ts",

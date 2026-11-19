@@ -2,6 +2,7 @@ import { draftMode } from "next/headers";
 import { getPayload, type Payload } from "payload";
 import config from "@payload-config";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
+import { docVisibleForRequest } from "./mergeDesigned";
 import { normalizePath } from "./path";
 import { withCMS } from "./safe";
 
@@ -56,9 +57,7 @@ export function isHiddenBlogPath(path: string): boolean {
 }
 
 function visibleDoc(doc: CmsDoc | null | undefined, draft: boolean): CmsDoc | null {
-  if (!doc) return null;
-  if (!draft && doc._status && doc._status !== "published") return null;
-  return doc;
+  return docVisibleForRequest(doc, draft);
 }
 
 async function findOne(
@@ -69,7 +68,7 @@ async function findOne(
   const payload = await getPayloadClient();
   const result = await payload.find({
     collection,
-    depth: 0,
+    depth: 1,
     draft,
     limit: 1,
     overrideAccess: draft,

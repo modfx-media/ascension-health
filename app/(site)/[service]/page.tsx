@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { CmsOnlyPage, cmsOnlyMetadata } from "@/components/cms/cmsOnly";
 import { withCmsMetadata } from "@/lib/cms/metadata";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -34,7 +34,7 @@ import { getDisplayedGoogleReviews } from "@/lib/google-reviews";
  * `{city-slug}-nv` value here.
  */
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 type Params = { service: string };
 
@@ -49,7 +49,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { service } = await params;
   const cityObj = parseCityNvSlug(service);
-  if (!cityObj) return {};
+  if (!cityObj) return cmsOnlyMetadata(`/${service}/`);
   return withCmsMetadata(
     `/${service}/`,
     buildPageMetadata({
@@ -67,7 +67,7 @@ export default async function CityHubPage({
 }) {
   const { service } = await params;
   const cityObj = parseCityNvSlug(service);
-  if (!cityObj) notFound();
+  if (!cityObj) return <CmsOnlyPage path={`/${service}/`} />;
 
   const cityName = cityObj.name;
   const surrounding = nearbyCities(cityObj);

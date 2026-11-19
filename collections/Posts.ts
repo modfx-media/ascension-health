@@ -1,6 +1,7 @@
 import type { CollectionConfig } from "payload";
 import { authenticated, publishedOrAuthenticated } from "./access";
 import { emptyStringToNull } from "./hooks";
+import { revalidateDeleted, revalidatePublished } from "../lib/cms/revalidate";
 import { collectionVersions } from "./versions";
 import { previewFromPath } from "../lib/cms/preview";
 
@@ -27,6 +28,8 @@ export const Posts: CollectionConfig = {
   versions: collectionVersions,
   hooks: {
     beforeValidate: [emptyStringToNull],
+    afterChange: [revalidatePublished],
+    afterDelete: [revalidateDeleted],
     beforeChange: [
       ({ data }) => {
         if (!data) return data;

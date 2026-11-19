@@ -6,6 +6,7 @@ import "./globals.css";
 import ScrollToTop from "@/components/ScrollToTop";
 import { CMSRoute } from "@/components/cms/CMSRoute";
 import { CmsFooterSlot, CmsHeaderSlot } from "@/components/cms/CMSChrome";
+import { CmsSchemaOverlay } from "@/components/cms/CmsSchemaOverlay";
 import { SiteSchema } from "@/components/seo/SiteSchema";
 import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
@@ -72,6 +73,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans">
         <SiteSchema />
+        <CmsSchemaOverlay />
         <ScrollToTop />
         <CmsHeaderSlot />
         <main className="flex-1">
