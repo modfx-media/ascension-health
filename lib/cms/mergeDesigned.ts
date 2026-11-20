@@ -8,6 +8,11 @@ import { absoluteSiteUrl } from "./path";
  * set. It must not replace the page with the generic renderer.
  */
 
+/**
+ * Suffix the root layout template (`%s | Ascension Health`) appends to
+ * string titles. A published `meta.title` is returned as `{ absolute }`
+ * so this suffix is not applied on top of the editor's text.
+ */
 export const TITLE_TEMPLATE_SUFFIX = " | Ascension Health";
 
 const GOOGLEBOT_DIRECTIVES = {
@@ -34,11 +39,9 @@ export function nonEmpty(value: unknown): string | undefined {
   return trimmed;
 }
 
-/** Title string for the page segment. The layout template adds the suffix. */
-export function titleForTemplate(title: string): string {
-  return title.endsWith(TITLE_TEMPLATE_SUFFIX)
-    ? title.slice(0, -TITLE_TEMPLATE_SUFFIX.length)
-    : title;
+/** Bypasses the layout title template, including for og:title and twitter:title. */
+function absoluteTitle(title: string): { absolute: string } {
+  return { absolute: title };
 }
 
 function readJsonObject(value: unknown): Record<string, unknown> | undefined {
@@ -232,8 +235,10 @@ function patchRobots(
 /**
  * Overlay only meta fields an editor actually set. The document title and
  * excerpt are not SEO fields. Unchecked robots flags leave the hardcoded
- * robots and googleBot tags unchanged. The title stays a string so the
- * layout template (`%s | Ascension Health`) still supplies the suffix.
+ * robots and googleBot tags unchanged. A set meta.title is the absolute
+ * document title: it is not trimmed to a length and the layout template
+ * must not append the brand suffix. The same string is used for og:title
+ * and twitter:title. Empty title and description leave the fallback tags.
  */
 export function mergeCmsMetadata(
   fallback: Metadata,
@@ -256,7 +261,7 @@ export function mergeCmsMetadata(
 
   let next: Metadata = { ...fallback };
   if (seo.title) {
-    const title = titleForTemplate(seo.title);
+    const title = absoluteTitle(seo.title);
     next = {
       ...next,
       title,
@@ -315,7 +320,7 @@ export function cmsSchemaJsonLd(
   };
   const next: Record<string, unknown> = seo.jsonLd ? { ...base, ...seo.jsonLd } : { ...base };
   if (seo.schemaType) next["@type"] = seo.schemaType;
-  if (seo.title) next.name = titleForTemplate(seo.title);
+  if (seo.title) next.name = seo.title;
   if (seo.description) next.description = seo.description;
   if (seo.breadcrumbLabel) next.alternateName = seo.breadcrumbLabel;
   if (seo.image) next.image = seo.image.url;
