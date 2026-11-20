@@ -6,8 +6,11 @@ import { normalizePath } from "./path";
 import { cmsConfiguredForRequest, withCMS } from "./safe";
 
 /**
- * Published CMS meta wins field by field. Empty meta leaves the hardcoded
- * metadata untouched. Drafts are read only while Next draft mode is on.
+ * Published CMS meta wins field by field. A set meta.title is rendered
+ * verbatim as the absolute document title (and as og:title / twitter:title);
+ * the layout template does not append a brand suffix and the text is not
+ * truncated. Empty meta leaves the hardcoded metadata untouched. Drafts are
+ * read only while Next draft mode is on.
  */
 export async function withCmsMetadata(path: string, fallback: Metadata): Promise<Metadata> {
   const normalized = normalizePath(path);
