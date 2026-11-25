@@ -48,6 +48,66 @@ export function isFuturePublished(publishedAt: string | null | undefined, now: D
   return date.getTime() > now.getTime();
 }
 
+const SAME_ORIGIN_COVER_HOSTS = new Set(["ascensionhealthnv.com", "www.ascensionhealthnv.com"]);
+
+const MEDIA_FILE_PATH = /^\/api\/media\/file\/([^/]+)$/;
+
+function hostnameFromSiteUrl(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  const trimmed = value.trim();
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const host = new URL(withProtocol).hostname.toLowerCase().replace(/\.$/, "");
+    return host || null;
+  } catch {
+    return null;
+  }
+}
+
+function isSameOriginCoverHost(hostname: string, siteUrl: string | null | undefined): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, "");
+  if (SAME_ORIGIN_COVER_HOSTS.has(host)) return true;
+  const configured = hostnameFromSiteUrl(siteUrl);
+  return configured !== null && host === configured;
+}
+
+function safeMediaFilePath(pathname: string): string | null {
+  const match = MEDIA_FILE_PATH.exec(pathname);
+  const encoded = match?.[1];
+  if (!encoded) return null;
+  let name: string;
+  try {
+    name = decodeURIComponent(encoded);
+  } catch {
+    return null;
+  }
+  if (!name || name === "." || name === ".." || /[/\\]/.test(name) || name.includes("\0")) return null;
+  return pathname;
+}
+
+/**
+ * Payload stores live covers as absolute same-origin file URLs. next/image
+ * 400s those because the site host is not in images.remotePatterns, so they
+ * become `/api/media/file/<name>` before render. Returns null otherwise.
+ */
+export function rewriteSameOriginCoverSrc(
+  src: string,
+  siteUrl: string | null | undefined = process.env.NEXT_PUBLIC_SITE_URL,
+): string | null {
+  try {
+    const url = new URL(src);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    if (!isSameOriginCoverHost(url.hostname, siteUrl)) return null;
+    return safeMediaFilePath(url.pathname);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sources next/image can render as-is. Relative paths are same-origin.
+ * Absolute same-origin media URLs stay rejected here; rewrite them first.
+ */
 export function isAllowedCoverSrc(src: string): boolean {
   if (src.startsWith("/")) return true;
   try {
@@ -252,7 +312,9 @@ function coverFromDoc(doc: PayloadPostLike, title: string): { src: string; alt: 
   const remote = doc.cover && typeof doc.cover === "object" ? nonEmpty(doc.cover.url) : undefined;
   const stored = nonEmpty(doc.coverSrc);
   const candidate = remote || (stored ? (stored.startsWith("/") || stored.startsWith("http") ? stored : `/${stored}`) : undefined);
-  if (candidate && isAllowedCoverSrc(candidate)) return { src: candidate, alt };
+  if (!candidate) return { src: FALLBACK_COVER, alt };
+  const rewritten = rewriteSameOriginCoverSrc(candidate) ?? candidate;
+  if (isAllowedCoverSrc(rewritten)) return { src: rewritten, alt };
   return { src: FALLBACK_COVER, alt };
 }
 
