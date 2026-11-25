@@ -1,5 +1,6 @@
 /**
- * Flip to `true` to show blog pages again. Posts stay in `lib/blog.ts`
- * either way — this only hides routes, links, and sitemap entries.
+ * Public blog switch. `false` hides the routes, nav and footer links,
+ * sitemap entries, and robots allow for `/blog/`. Posts stay in Payload
+ * and `lib/blog.ts` either way.
  */
-export const BLOG_PUBLIC = false;
+export const BLOG_PUBLIC = true;

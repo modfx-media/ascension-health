@@ -1,14 +1,17 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
+import { getIndexableBlogPosts } from "@/lib/cms/blog-posts";
+import { isFuturePublished } from "@/lib/cms/blog-post-map";
 import { PSEO_CONDITIONS, PSEO_SERVICES } from "@/lib/pSEO-data";
 import {
   PSEO_TARGET_CITIES,
   PSEO_TREATMENT_PAGES,
   SITE_URL,
 } from "@/lib/pSEO-routing";
-import { getPublishedBlogSlugs } from "@/lib/ranked/posts";
 import { safeSitemapEntries } from "@/lib/cms/queries";
+
+export const revalidate = 300;
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]["changeFrequency"];
 
@@ -122,9 +125,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
 
   const slugs = BLOG_PUBLIC
-    ? await getPublishedBlogSlugs().catch(() =>
-        getAllPosts().map((post) => post.slug),
-      )
+    ? await getIndexableBlogPosts()
+        .then((posts) => posts.map((post) => post.slug))
+        .catch(() =>
+          getAllPosts()
+            .filter((post) => !isFuturePublished(post.publishedAt))
+            .map((post) => post.slug),
+        )
     : [];
   const blogEntries: Entry[] = slugs.map((slug) => ({
     path: `/blog/${slug}/`,

@@ -51,7 +51,9 @@ export default buildConfig({
       connectionTimeoutMillis: 2500,
     },
     push: false,
-    prodMigrations: migrations,
+    // Preview builds set NODE_ENV=production and share the prod database.
+    // Only the production deployment may apply migrations.
+    prodMigrations: process.env.VERCEL_ENV === "production" ? migrations : undefined,
     forceUseVercelPostgres: !isLocalDatabase(connectionString),
     migrationDir: path.resolve(dirname, "migrations"),
   }),
