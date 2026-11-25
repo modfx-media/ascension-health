@@ -2,6 +2,7 @@ import { draftMode } from "next/headers";
 import { getPayload, type Payload } from "payload";
 import config from "@payload-config";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
+import { blogSlugFromLookup } from "./blog-post-map";
 import { docVisibleForRequest } from "./mergeDesigned";
 import { normalizePath } from "./path";
 import { withCMS } from "./safe";
@@ -82,12 +83,35 @@ async function findOne(
   return visibleDoc((result.docs[0] as CmsDoc | undefined) ?? null, draft);
 }
 
+async function findBlogPost(path: string, draft: boolean): Promise<CmsDoc | null> {
+  const normalized = normalizePath(path);
+  const bare = normalized.length > 1 ? normalized.replace(/\/$/, "") : normalized;
+  const slug = blogSlugFromLookup(normalized);
+  const payload = await getPayloadClient();
+  const result = await payload.find({
+    collection: "posts",
+    depth: 1,
+    draft: false,
+    limit: 1,
+    overrideAccess: false,
+    pagination: false,
+    where: {
+      or: [
+        { slug: { equals: slug } },
+        { path: { equals: normalized } },
+        { path: { equals: bare } },
+      ],
+    },
+  });
+  return visibleDoc((result.docs[0] as CmsDoc | undefined) ?? null, draft);
+}
+
 export async function findPublishedOverlay(path: string): Promise<CmsDoc | null> {
   const normalized = normalizePath(path);
   if (isHiddenBlogPath(normalized)) return null;
   const draft = await readDraftMode();
   if (normalized.startsWith("/blog/") && normalized !== "/blog/") {
-    return findOne("posts", normalized, draft);
+    return findBlogPost(normalized, draft);
   }
   const page = await findOne("pages", normalized, draft);
   if (page) return page;
@@ -132,7 +156,7 @@ export async function getPublishedSitemapPaths(): Promise<SitemapCmsEntry[]> {
   for (const doc of [...pages.docs, ...posts.docs] as CmsDoc[]) {
     if (!doc.path || skippedBySeo(doc)) continue;
     const path = normalizePath(doc.path);
-    if (isHiddenBlogPath(path)) continue;
+    if (isHiddenBlogPath(path) || path.startsWith("/blog/")) continue;
     entries.push({
       path,
       priority: path.startsWith("/blog/") ? 0.7 : 0.6,

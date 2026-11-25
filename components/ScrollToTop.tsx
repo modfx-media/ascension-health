@@ -8,9 +8,18 @@ export default function ScrollToTop() {
 
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
+      try {
+        window.history.scrollRestoration = "manual";
+      } catch {
+        // Older WebKit rejects the assignment.
+      }
     }
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    } catch {
+      // Safari does not accept ScrollBehavior "instant".
+      window.scrollTo(0, 0);
+    }
   }, [pathname]);
 
   return null;

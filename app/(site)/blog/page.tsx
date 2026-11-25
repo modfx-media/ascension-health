@@ -13,10 +13,10 @@ import {
   type BlogPost,
 } from "@/lib/blog";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
-import { getPublishedSitePosts } from "@/lib/ranked/map-post";
+import { getPublicBlogPosts } from "@/lib/cms/blog-posts";
 import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 const BLOG_DESCRIPTION =
   "Insights from Ascension Health on chiropractic care, hormone health, weight loss, and pain-free living in Fernley, NV and Northern Nevada.";
@@ -43,7 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function BlogIndexPage() {
   if (!BLOG_PUBLIC) notFound();
-  const posts = await getPublishedSitePosts();
+  const posts = await getPublicBlogPosts();
   const featured = posts[0];
   const rest = featured ? posts.filter((p) => p.slug !== featured.slug) : posts;
   const categories = [...new Set(posts.map((p) => p.category))].sort();

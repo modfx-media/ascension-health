@@ -21,20 +21,19 @@ import { Reveal } from "@/components/Motion";
 import {
   BLOG_BASE,
   formatPostDate,
+  getAllPosts,
   type BlogBlock,
   type BlogPost,
 } from "@/lib/blog";
-import {
-  getPublishedSitePost,
-  getPublishedSitePosts,
-  getRelatedFromList,
-} from "@/lib/ranked/map-post";
+import { getRelatedFromList } from "@/lib/ranked/map-post";
 import { BLOG_PUBLIC } from "@/lib/blog-visibility";
+import { getPublicBlogPost, getPublicBlogPosts } from "@/lib/cms/blog-posts";
 import { withCmsMetadata } from "@/lib/cms/metadata";
+import { titleForTemplate } from "@/lib/cms/mergeDesigned";
 import { resolvePublicSiteOrigin } from "@/lib/cms/server-url";
 import { SITE } from "@/lib/navigation";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 export const dynamicParams = true;
 
 const SITE_URL = resolvePublicSiteOrigin();
@@ -43,7 +42,9 @@ type RouteParams = { slug: string };
 
 export async function generateStaticParams(): Promise<RouteParams[]> {
   if (!BLOG_PUBLIC) return [];
-  const posts = await getPublishedSitePosts().catch(() => []);
+  const posts = await getPublicBlogPosts().catch(() =>
+    getAllPosts().filter((post) => +new Date(post.publishedAt) <= Date.now()),
+  );
   return posts.map((p) => ({ slug: p.slug }));
 }
 
@@ -54,22 +55,28 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   if (!BLOG_PUBLIC) return { title: "Article not found", robots: { index: false, follow: false } };
-  const post = await getPublishedSitePost(slug);
+  const post = await getPublicBlogPost(slug);
   if (!post) return { title: "Article not found" };
 
-  const canonical = `${BLOG_BASE}/${post.slug}/`;
+  const canonical = `${SITE_URL}${BLOG_BASE}/${post.slug}/`;
+  const title = post.seo?.title ? titleForTemplate(post.seo.title) : post.title;
+  const description = post.seo?.description || post.excerpt;
   const cover =
     typeof post.cover.src === "string" ? post.cover.src : post.cover.src.src;
   const coverUrl = cover.startsWith("http") ? cover : `${SITE_URL}${cover}`;
 
-  return withCmsMetadata(canonical, {
-    title: post.title,
-    description: post.excerpt,
+  const meta = await withCmsMetadata(`${BLOG_BASE}/${post.slug}/`, {
+    title,
+    description,
     alternates: { canonical },
+    robots:
+      post.seo?.noIndex || post.seo?.noFollow
+        ? { index: !post.seo.noIndex, follow: !post.seo.noFollow }
+        : undefined,
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
-      url: `${SITE_URL}${canonical}`,
+      title,
+      description,
+      url: canonical,
       type: "article",
       siteName: "Ascension Health",
       publishedTime: post.publishedAt,
@@ -80,11 +87,20 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
-      description: post.excerpt,
+      title,
+      description,
       images: [coverUrl],
     },
   });
+  const openGraph = meta.openGraph;
+  return {
+    ...meta,
+    alternates: { ...meta.alternates, canonical },
+    openGraph:
+      openGraph && typeof openGraph === "object" && !Array.isArray(openGraph)
+        ? { ...openGraph, url: canonical }
+        : openGraph,
+  };
 }
 
 export default async function BlogPostPage({
@@ -94,8 +110,8 @@ export default async function BlogPostPage({
 }) {
   const { slug } = await params;
   if (!BLOG_PUBLIC) notFound();
-  const posts = await getPublishedSitePosts();
-  const post = posts.find((p) => p.slug === slug);
+  const posts = await getPublicBlogPosts();
+  const post = posts.find((p) => p.slug === slug) ?? (await getPublicBlogPost(slug));
   if (!post) notFound();
 
   const related = getRelatedFromList(post, posts, 3);
