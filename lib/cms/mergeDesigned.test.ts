@@ -7,8 +7,15 @@ import { createElement, Fragment } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Metadata } from "next";
 
+import { resolveTitle } from "next/dist/lib/metadata/resolvers/resolve-title.js";
 import { PSEO_CONDITIONS, PSEO_SERVICES } from "@/lib/pSEO-data";
-import { PSEO_TARGET_CITIES, PSEO_TREATMENT_PAGES } from "@/lib/pSEO-routing";
+import {
+  PSEO_TARGET_CITIES,
+  PSEO_TREATMENT_PAGES,
+  buildPageMetadata,
+  getService,
+  getTargetCity,
+} from "@/lib/pSEO-routing";
 import { isDesignedPath } from "./designed-routes";
 import {
   TITLE_TEMPLATE_SUFFIX,
@@ -18,7 +25,6 @@ import {
   mergeCmsMetadata,
   pageHasRealContent,
   selectRoutedBody,
-  titleForTemplate,
   type RoutedDocLike,
 } from "./mergeDesigned";
 import { pathsToRevalidate } from "./revalidate";
@@ -107,15 +113,21 @@ function twitterField(meta: Metadata, key: "title" | "description"): unknown {
   return twitter[key];
 }
 
+const DOCUMENT_TITLE_TEMPLATE = `%s${TITLE_TEMPLATE_SUFFIX}`;
+
+/**
+ * Child pages inherit the layout title template. The layout sets og/twitter
+ * titles as plain strings, so those templates stay empty and a string social
+ * title is rendered unchanged. `{ absolute }` bypasses either template.
+ */
 function resolvedTitle(title: Metadata["title"]): string {
-  if (typeof title === "string") return `${title}${TITLE_TEMPLATE_SUFFIX}`;
-  if (title && typeof title === "object" && "absolute" in title && typeof title.absolute === "string") {
-    return title.absolute;
-  }
-  if (title && typeof title === "object" && "default" in title && typeof title.default === "string") {
-    return title.default;
-  }
-  return LAYOUT_TITLE;
+  if (title == null) return LAYOUT_TITLE;
+  return resolveTitle(title, DOCUMENT_TITLE_TEMPLATE).absolute;
+}
+
+function resolvedSocialTitle(title: unknown): string {
+  if (title == null || title === "") return "";
+  return resolveTitle(title as Metadata["title"], null).absolute;
 }
 
 function robotsTags(robots: Metadata["robots"] | undefined): { robots: string; googlebot: string } {
@@ -148,9 +160,9 @@ function headTags(meta: Metadata): string[] {
   return [
     `<title>${title}</title>`,
     `<meta name="description" content="${description}"/>`,
-    `<meta property="og:title" content="${String(ogField(meta, "title") ?? "")}"/>`,
+    `<meta property="og:title" content="${resolvedSocialTitle(ogField(meta, "title"))}"/>`,
     `<meta property="og:description" content="${String(ogField(meta, "description") ?? "")}"/>`,
-    `<meta name="twitter:title" content="${String(twitterField(meta, "title") ?? "")}"/>`,
+    `<meta name="twitter:title" content="${resolvedSocialTitle(twitterField(meta, "title"))}"/>`,
     `<meta name="twitter:description" content="${String(twitterField(meta, "description") ?? "")}"/>`,
     `<meta name="robots" content="${robots.robots}"/>`,
     `<meta name="googlebot" content="${robots.googlebot}"/>`,
@@ -233,20 +245,22 @@ test("a meta description edit changes only the description tags", () => {
 });
 
 test("title, canonical, image, and robots overlay only the fields that are set", () => {
+  const cmsTitle = "New about title | Ascension Health";
   const titled = mergeCmsMetadata(
     ABOUT,
     {
       title: "Document title",
       excerpt: "Excerpt",
       path: "/about/",
-      meta: { title: "New about title | Ascension Health" },
+      meta: { title: cmsTitle },
     },
     "/about/",
   );
-  assert.equal(titled.title, "New about title");
-  assert.equal(titleForTemplate("New about title | Ascension Health"), "New about title");
-  assert.equal(resolvedTitle(titled.title), `New about title${TITLE_TEMPLATE_SUFFIX}`);
-  assert.equal(ogField(titled, "title"), "New about title");
+  assert.deepEqual(titled.title, { absolute: cmsTitle });
+  assert.equal(resolvedTitle(titled.title), cmsTitle);
+  assert.equal(resolvedSocialTitle(ogField(titled, "title")), cmsTitle);
+  assert.equal(resolvedSocialTitle(twitterField(titled, "title")), cmsTitle);
+  assert.equal(resolveTitle(ogField(titled, "title") as Metadata["title"], DOCUMENT_TITLE_TEMPLATE).absolute, cmsTitle);
   assert.equal(titled.description, ABOUT.description);
   assert.equal(titled.robots, undefined);
 
@@ -323,6 +337,132 @@ test("schema JSON-LD is added only for schema fields that are set", () => {
   assert.equal(overlay?.alternateName, "About");
   assert.equal(overlay?.name, undefined);
   assert.equal(overlay?.url, "https://ascensionhealthnv.com/about/");
+
+  const named = cmsSchemaJsonLd("/about/", {
+    meta: {
+      schemaType: "AboutPage",
+      title: "Our Story | Drug-Free Pain Relief in Fernley",
+    },
+  });
+  assert.equal(named?.name, "Our Story | Drug-Free Pain Relief in Fernley");
+});
+
+const HOME: Metadata = {};
+
+const chiropractic = getService("chiropractic-care");
+const fernley = getTargetCity("fernley");
+assert.ok(chiropractic && fernley);
+const LOCATION: Metadata = buildPageMetadata({
+  title: `${chiropractic.name} in ${fernley.name}, NV`,
+  description: `${chiropractic.name} for ${fernley.name}, NV patients, ${chiropractic.benefit}. Same-week appointments at our Fernley clinic, serving ${fernley.region}.`,
+  path: `/${chiropractic.slug}/${fernley.slug}-nv/`,
+});
+
+const BLOG_EXCERPT =
+  "A published excerpt that stays in the head until an editor sets meta.description.";
+const BLOG_POST: Metadata = {
+  title: "How Fernley Patients Find Lasting Pain Relief",
+  description: BLOG_EXCERPT,
+  alternates: { canonical: "/blog/fernley-pain-relief/" },
+  openGraph: {
+    title: "How Fernley Patients Find Lasting Pain Relief",
+    description: BLOG_EXCERPT,
+    url: "https://ascensionhealthnv.com/blog/fernley-pain-relief/",
+    type: "article",
+    siteName: "Ascension Health",
+    publishedTime: "2026-01-15T00:00:00.000Z",
+    modifiedTime: "2026-01-15T00:00:00.000Z",
+    authors: ["Ascension Health"],
+    tags: ["chiropractic"],
+    images: [{ url: "https://ascensionhealthnv.com/images/cover.jpg", alt: "Clinic" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "How Fernley Patients Find Lasting Pain Relief",
+    description: BLOG_EXCERPT,
+    images: ["https://ascensionhealthnv.com/images/cover.jpg"],
+  },
+};
+
+const FALLBACKS = [
+  { name: "home", path: "/", fallback: HOME },
+  { name: "page", path: "/about/", fallback: ABOUT },
+  { name: "location", path: "/chiropractic-care/fernley-nv/", fallback: LOCATION },
+  { name: "post", path: "/blog/fernley-pain-relief/", fallback: BLOG_POST },
+] as const;
+
+function publishedDoc(meta: Record<string, unknown>) {
+  return {
+    title: "Document title that must not become the meta title",
+    excerpt: "Imported excerpt that must not become the meta description.",
+    _status: "published" as const,
+    meta,
+  };
+}
+
+test("a set CMS title and description are verbatim, including on home, pages, locations, and posts", () => {
+  const customTitle = "Our Story | Drug-Free Pain Relief in Fernley";
+  const suffixedTitle = `Clinic story${TITLE_TEMPLATE_SUFFIX}`;
+  const longTitle = `${"Fernley ".repeat(40)}pain relief`;
+  const longDescription = `${"Whole-patient chiropractic care in Fernley. ".repeat(20)}Call today.`;
+  assert.ok(longTitle.length > 160);
+  assert.ok(longDescription.length > 320);
+  assert.equal(
+    resolveTitle(customTitle, DOCUMENT_TITLE_TEMPLATE).absolute,
+    `${customTitle}${TITLE_TEMPLATE_SUFFIX}`,
+  );
+
+  for (const { name, path: route, fallback } of FALLBACKS) {
+    for (const doc of [null, publishedDoc({ title: "   ", description: "  " })]) {
+      const merged = mergeCmsMetadata(fallback, doc, route);
+      assert.equal(merged, fallback, `${name} empty meta`);
+      assert.equal(headTags(merged).join("\n"), headTags(fallback).join("\n"), `${name} head`);
+    }
+
+    for (const cmsTitle of [customTitle, suffixedTitle, longTitle]) {
+      const merged = mergeCmsMetadata(fallback, publishedDoc({ title: `  ${cmsTitle}  ` }), route);
+      assert.deepEqual(merged.title, { absolute: cmsTitle }, name);
+      assert.equal(resolvedTitle(merged.title), cmsTitle, name);
+      assert.equal(resolvedSocialTitle(ogField(merged, "title")), cmsTitle, name);
+      assert.equal(resolvedSocialTitle(twitterField(merged, "title")), cmsTitle, name);
+      assert.equal(
+        resolveTitle(ogField(merged, "title") as Metadata["title"], DOCUMENT_TITLE_TEMPLATE).absolute,
+        cmsTitle,
+        name,
+      );
+      assert.equal(
+        resolveTitle(twitterField(merged, "title") as Metadata["title"], DOCUMENT_TITLE_TEMPLATE).absolute,
+        cmsTitle,
+        name,
+      );
+      assert.equal(merged.description, fallback.description, name);
+      assert.equal(ogField(merged, "description"), ogField(fallback, "description"), name);
+      const before = headTags(fallback);
+      const after = headTags(merged);
+      const changed = after.filter((tag, index) => tag !== before[index]);
+      assert.deepEqual(
+        changed,
+        [
+          `<title>${cmsTitle}</title>`,
+          `<meta property="og:title" content="${cmsTitle}"/>`,
+          `<meta name="twitter:title" content="${cmsTitle}"/>`,
+        ],
+        name,
+      );
+    }
+
+    const described = mergeCmsMetadata(
+      fallback,
+      publishedDoc({ description: `  ${longDescription}  ` }),
+      route,
+    );
+    assert.equal(described.title, fallback.title, name);
+    assert.equal(resolvedTitle(described.title), resolvedTitle(fallback.title), name);
+    assert.equal(described.description, longDescription, name);
+    assert.equal(ogField(described, "description"), longDescription, name);
+    assert.equal(twitterField(described, "description"), longDescription, name);
+    assert.equal(resolvedSocialTitle(ogField(described, "title")), resolvedSocialTitle(ogField(fallback, "title")), name);
+  }
 });
 
 test("the generic renderer is only for CMS-only paths with real content", () => {
